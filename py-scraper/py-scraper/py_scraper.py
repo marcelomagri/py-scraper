@@ -4,13 +4,15 @@ from bs4 import BeautifulSoup
 import requests
 import sqlite3
 import datetime
+#import http.server
+#import socketserver
 
 # variáveis globais
 items_to_scrape = 100
 intervalo = 30
 start_item = 0
 indices = range(start_item, start_item + (items_to_scrape * 4), items_to_scrape)
-paises = ['pt'] #'br', 'us'
+paises = ['pt', 'br', 'us']
 googleplay_produtos = []
 
 def msg():
@@ -65,28 +67,22 @@ def scrape():
 
             print("")
 
-            #origem = requests.get(url % (str(indice),items_to_scrape,"us")).text
-            #html = BeautifulSoup(origem, 'html.parser')
-            #produtos = html.find_all('div', {'class': ['card-content']})
-
-            #for current, produto in enumerate(produtos):
-            #    atual, descricao = str(current), str(produto.attrs['data-docid'])
-            #    print('%s: %s', (atual, descricao))
-            #    titulo_produto = produto.find('a', {'class': ['title']}).text
-            #    classificacao = str.replace(str.split(titulo_produto)[0], '.', '')
-            #    detalhes_produto = [str(produto.attrs['data-docid']), classificacao, 'us']
-            #    googleplay_produtos.append(detalhes_produto)
-            #    cursor.execute("INSERT INTO RAW_DATA (PACKAGE, DESCRIPTION, POSITION, ORIGIN, DATAHORA) VALUES ('%s', '%s', %s, 'us', '%s')" % (descricao, titulo_produto[titulo_produto.find('.  ') + 3:999], classificacao, str(datetime.datetime.utcnow())))
-            #    db.commit()
-
-            #time.sleep(15)
-
     closeConn(db)
 
 # schedule.every(5).minutes.do(msg)
 
+#PORT = 9090
+#Handler = http.server.SimpleHTTPRequestHandler
+
+#with socketserver.TCPServer(("", PORT), Handler) as httpd:
+#    print("Serving at port", PORT)
+#    httpd.serve_forever()
+
 while True:
     # schedule.run_pending()
+    for ix in range(10, 0, -1):
+        print("Esperando por %i segundos antes de iniciar as capturas \r" % ix, end="")
+        time.sleep(1)
     scrape()
     #qtd = 120
     #valores = range(0, 360, 120)
