@@ -27,6 +27,7 @@
     <Folder Include="data\" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="config.json" />
     <Content Include="data\dados.db" />
     <Content Include="data\dados.db-journal" />
   </ItemGroup>

@@ -4,15 +4,20 @@ from bs4 import BeautifulSoup
 import requests
 import sqlite3
 import datetime
+import json
 #import http.server
 #import socketserver
 
+#carrega as configurações
+with open('config.json') as config_file:
+    config = json.load(config_file)
+
 # variáveis globais
-items_to_scrape = 100
-intervalo = 30
-start_item = 0
+items_to_scrape = config['items_to_scrape']
+intervalo = config['intervalo']
+start_item = config['item_inicial']
 indices = range(start_item, start_item + (items_to_scrape * 4), items_to_scrape)
-paises = ['pt', 'br', 'us']
+paises = config['country_codes'].split(',')
 googleplay_produtos = []
 
 def msg():
@@ -61,7 +66,7 @@ def scrape():
                 cursor.execute("INSERT INTO RAW_DATA (PACKAGE, DESCRIPTION, POSITION, ORIGIN, DATAHORA) VALUES ('%s', '%s', %s, '%s', '%s')" % (descricao, titulo_produto[titulo_produto.find('.  ') + 3:999], classificacao, country_code, str(datetime.datetime.utcnow())))
                 db.commit()
 
-            for ix in range(180, 0, -1):
+            for ix in range(intervalo, 0, -1):
                 print("Esperando por %i segundos antes de efetuar o novo request \r" % ix, end="")
                 time.sleep(1)
 
@@ -80,7 +85,7 @@ def scrape():
 
 while True:
     # schedule.run_pending()
-    for ix in range(10, 0, -1):
+    for ix in range(config['delay'], 0, -1):
         print("Esperando por %i segundos antes de iniciar as capturas \r" % ix, end="")
         time.sleep(1)
     scrape()
