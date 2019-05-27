@@ -5,6 +5,8 @@ import requests
 import sqlite3
 import datetime
 import json
+import pymssql
+
 #import http.server
 #import socketserver
 
@@ -34,7 +36,7 @@ def closeConn(conn):
     conn.close()
 
 def repeat_to_length(string_to_expand, length):
-   return (string_to_expand * ((length/len(string_to_expand))+1))[:length]
+   return (string_to_expand * (int((length/len(string_to_expand))+1)))[:length]
 
 def scrape():
     print("scraping...")
@@ -45,9 +47,11 @@ def scrape():
         for indice in indices:
             #url = "https://play.google.com/store/apps/category/GAME_WORD/collection/topselling_free?start=%s&num=%s&gl=%s"
             url = "https://play.google.com/store/apps/category/GAME_WORD/collection/topselling_free"
-            print("Capturando %s" % url)
+            
             #origem_raw = requests.get(url % (str(indice),items_to_scrape,country_code), headers = {'User-agent': 'appai bot 0.1'})
             origem_raw = requests.post(url, {"start":str(indice), "num":str(items_to_scrape), "xhr":"1", "numChildren":"0", "gl": country_code})
+
+            print("Capturando %s" % (url))
 
             if origem_raw.status_code != 200:
                 print("Erro: %s" % str(origem_raw.status_code))
@@ -84,9 +88,17 @@ def scrape():
 #    httpd.serve_forever()
 
 while True:
+    #conexao = pymssql.connect(server='d72v220i', user='user_sh0743', password='pwd_sh0743', database='sh0743')
+    #cursor = conexao.cursor()
+    #cursor.execute("SELECT * FROM T9115_MAT_SERV_SAD")
+    #item = cursor.fetchone()
     # schedule.run_pending()
-    for ix in range(config['delay'], 0, -1):
-        print("Esperando por %i segundos antes de iniciar as capturas \r" % ix, end="")
+    for ix in range(config['delay'], -1, -1):
+        if ix == 0:
+            #print(repeat_to_length(' ', 80))
+            print("Iniciando capturas...  %s\r" % (repeat_to_length(' ', 40)) , end="")
+        else:
+            print("Esperando por %i segundos antes de iniciar as capturas \r" % ix, end="")
         time.sleep(1)
     scrape()
     #qtd = 120
