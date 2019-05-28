@@ -21,6 +21,9 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="my_sql.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="py_scraper.py" />
   </ItemGroup>
   <ItemGroup>

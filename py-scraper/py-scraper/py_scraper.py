@@ -2,13 +2,10 @@ import schedule
 import time
 from bs4 import BeautifulSoup
 import requests
-import sqlite3
 import datetime
 import json
-import pymssql
-
-#import http.server
-#import socketserver
+from io import open as iopen
+import my_sql as sqlOp
 
 #carrega as configurações
 with open('config.json') as config_file:
@@ -22,33 +19,18 @@ indices = range(start_item, start_item + (items_to_scrape * 4), items_to_scrape)
 paises = config['country_codes'].split(',')
 googleplay_produtos = []
 
-def msg():
-    print("Oi")
-
-def openConn():
-    conn = sqlite3.connect('data/dados.db')
-    cursor = conn.cursor()
-
-    return conn, cursor
-
-def closeConn(conn):
-
-    conn.close()
-
 def repeat_to_length(string_to_expand, length):
    return (string_to_expand * (int((length/len(string_to_expand))+1)))[:length]
 
 def scrape():
     print("scraping...")
 
-    db, cursor = openConn()
+    conn = sqlOp.openConn()
 
     for country_code in paises:
         for indice in indices:
-            #url = "https://play.google.com/store/apps/category/GAME_WORD/collection/topselling_free?start=%s&num=%s&gl=%s"
             url = "https://play.google.com/store/apps/category/GAME_WORD/collection/topselling_free"
             
-            #origem_raw = requests.get(url % (str(indice),items_to_scrape,country_code), headers = {'User-agent': 'appai bot 0.1'})
             origem_raw = requests.post(url, {"start":str(indice), "num":str(items_to_scrape), "xhr":"1", "numChildren":"0", "gl": country_code})
 
             print("Capturando %s" % (url))
@@ -62,13 +44,17 @@ def scrape():
             for current, produto in enumerate(produtos):
                 atual, descricao = str(current), str(produto.attrs['data-docid'])
                 print(str(current + indice))
-                # print('%s: %s', (atual, descricao))
                 titulo_produto = str.replace(produto.find('a', {'class': ['title']}).text, '\'', '\'\'')
                 classificacao = str.replace(str.split(titulo_produto)[0], '.', '')
                 detalhes_produto = [str(produto.attrs['data-docid']), classificacao, 'br']
+                imagem_produto_grande = requests.get('https:%s' % (produto.find('img', {'class': ['cover-image']}).attrs['data-cover-small']));
+                if imagem_produto_grande.status_code == 200:
+                    extensao = str.replace(imagem_produto_grande.headers['content-type'], 'image/', '')
+                    with iopen("c:\\temp\\%s.%s" % (descricao, extensao), 'wb') as file:
+                        file.write(imagem_produto_grande.content)
                 googleplay_produtos.append(detalhes_produto)
-                cursor.execute("INSERT INTO RAW_DATA (PACKAGE, DESCRIPTION, POSITION, ORIGIN, DATAHORA) VALUES ('%s', '%s', %s, '%s', '%s')" % (descricao, titulo_produto[titulo_produto.find('.  ') + 3:999], classificacao, country_code, str(datetime.datetime.utcnow())))
-                db.commit()
+                
+                sqlOp.WriteItem(conn, descricao, titulo_produto[titulo_produto.find('.  ') + 3:999], classificacao, country_code)
 
             for ix in range(intervalo, 0, -1):
                 print("Esperando por %i segundos antes de efetuar o novo request \r" % ix, end="")
@@ -76,33 +62,14 @@ def scrape():
 
             print("")
 
-    closeConn(db)
-
-# schedule.every(5).minutes.do(msg)
-
-#PORT = 9090
-#Handler = http.server.SimpleHTTPRequestHandler
-
-#with socketserver.TCPServer(("", PORT), Handler) as httpd:
-#    print("Serving at port", PORT)
-#    httpd.serve_forever()
+    sqlOp.CloseConn(conn)
 
 while True:
-    #conexao = pymssql.connect(server='d72v220i', user='user_sh0743', password='pwd_sh0743', database='sh0743')
-    #cursor = conexao.cursor()
-    #cursor.execute("SELECT * FROM T9115_MAT_SERV_SAD")
-    #item = cursor.fetchone()
-    # schedule.run_pending()
     for ix in range(config['delay'], -1, -1):
         if ix == 0:
-            #print(repeat_to_length(' ', 80))
             print("Iniciando capturas...  %s\r" % (repeat_to_length(' ', 40)) , end="")
         else:
             print("Esperando por %i segundos antes de iniciar as capturas \r" % ix, end="")
         time.sleep(1)
     scrape()
-    #qtd = 120
-    #valores = range(0, 360, 120)
-    #for val in valores:
-    #    print(val)
     time.sleep(60)
