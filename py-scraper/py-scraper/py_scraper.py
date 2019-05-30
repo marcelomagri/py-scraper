@@ -47,7 +47,7 @@ def scrape():
                 titulo_produto = str.replace(produto.find('a', {'class': ['title']}).text, '\'', '\'\'')
                 classificacao = str.replace(str.split(titulo_produto)[0], '.', '')
                 detalhes_produto = [str(produto.attrs['data-docid']), classificacao, 'br']
-                imagem_produto_grande = requests.get('https:%s' % (produto.find('img', {'class': ['cover-image']}).attrs['data-cover-small']));
+                imagem_produto_grande = requests.get('https:%s' % (str.replace(produto.find('img', {'class': ['cover-image']}).attrs['data-cover-small'], 'https:', '')))
                 if imagem_produto_grande.status_code == 200:
                     extensao = str.replace(imagem_produto_grande.headers['content-type'], 'image/', '')
                     with iopen("c:\\temp\\%s.%s" % (descricao, extensao), 'wb') as file:
