@@ -3,5 +3,6 @@
   "intervalo": 60,
   "item_inicial": 0,
   "country_codes": "br,pt,us,uk,es",
-  "delay": 10
+  "delay": 10,
+  "capturar_icones": 0
 }

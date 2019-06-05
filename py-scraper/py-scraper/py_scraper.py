@@ -6,6 +6,7 @@ import datetime
 import json
 from io import open as iopen
 import my_sql as sqlOp
+import sqlsvr as ssvr
 
 #carrega as configurações
 with open('config.json') as config_file:
@@ -16,7 +17,7 @@ items_to_scrape = config['items_to_scrape']
 intervalo = config['intervalo']
 start_item = config['item_inicial']
 indices = range(start_item, start_item + (items_to_scrape * 4), items_to_scrape)
-paises = config['country_codes'].split(',')
+paises = ssvr.return_countrycodes() #config['country_codes'].split(',')
 googleplay_produtos = []
 
 def repeat_to_length(string_to_expand, length):
@@ -25,13 +26,13 @@ def repeat_to_length(string_to_expand, length):
 def scrape():
     print("scraping...")
 
-    conn = sqlOp.openConn()
+    conn = ssvr.openConn()
 
     for country_code in paises:
         for indice in indices:
             url = "https://play.google.com/store/apps/category/GAME_WORD/collection/topselling_free"
             
-            origem_raw = requests.post(url, {"start":str(indice), "num":str(items_to_scrape), "xhr":"1", "numChildren":"0", "gl": country_code})
+            origem_raw = requests.post(url, {"start":str(indice), "num":str(items_to_scrape), "xhr":"1", "numChildren":"0", "gl": country_code['COUNTRY_CODE']})
 
             print("Capturando %s" % (url))
 
@@ -46,15 +47,21 @@ def scrape():
                 print(str(current + indice))
                 titulo_produto = str.replace(produto.find('a', {'class': ['title']}).text, '\'', '\'\'')
                 classificacao = str.replace(str.split(titulo_produto)[0], '.', '')
+                fabricante = str.replace(produto.find('a', {'class': ['subtitle']}).text, '\'', '\'\'')
+                link_fabricante = str.replace(produto.find('a', {'class': ['subtitle']}).attrs['href'], '\'', '\'\'')
                 detalhes_produto = [str(produto.attrs['data-docid']), classificacao, 'br']
-                imagem_produto_grande = requests.get('https:%s' % (str.replace(produto.find('img', {'class': ['cover-image']}).attrs['data-cover-small'], 'https:', '')))
-                if imagem_produto_grande.status_code == 200:
-                    extensao = str.replace(imagem_produto_grande.headers['content-type'], 'image/', '')
-                    with iopen("c:\\temp\\%s.%s" % (descricao, extensao), 'wb') as file:
-                        file.write(imagem_produto_grande.content)
+                imagem_produto = str.replace(produto.find('img', {'class': ['cover-image']}).attrs['data-cover-small'], 'https:', '')
+                if config['capturar_icones'] != 0:
+                    imagem_produto_grande = requests.get('https:%s' % (str.replace(produto.find('img', {'class': ['cover-image']}).attrs['data-cover-small'], 'https:', '')))
+                    if imagem_produto_grande.status_code == 200:
+                        extensao = str.replace(imagem_produto_grande.headers['content-type'], 'image/', '')
+                        with iopen("c:\\temp\\%s.%s" % (descricao, extensao), 'wb') as file:
+                            file.write(imagem_produto_grande.content)
                 googleplay_produtos.append(detalhes_produto)
-                
-                sqlOp.WriteItem(conn, descricao, titulo_produto[titulo_produto.find('.  ') + 3:999], classificacao, country_code)
+
+                ssvr.WriteItem(conn, 2, country_code['COUNTRY_CODE'], fabricante, link_fabricante, titulo_produto[titulo_produto.find('.  ') + 3:999], titulo_produto, descricao, imagem_produto, classificacao, 5)
+
+                #sqlOp.WriteItem(conn, descricao, titulo_produto[titulo_produto.find('.  ') + 3:999], classificacao, country_code)
 
             for ix in range(intervalo, 0, -1):
                 print("Esperando por %i segundos antes de efetuar o novo request \r" % ix, end="")
@@ -62,7 +69,8 @@ def scrape():
 
             print("")
 
-    sqlOp.CloseConn(conn)
+    #sqlOp.closeConn(conn)
+    ssvr.closeConn(conn)
 
 while True:
     for ix in range(config['delay'], -1, -1):
